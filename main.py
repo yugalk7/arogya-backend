@@ -1,16 +1,22 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 import joblib
 import numpy as np
 
-
 app = FastAPI()
 
-# 🔥 Load model
+# 🔥 ADD CORS
+
+app.add_middleware(
+CORSMiddleware,
+allow_origins=["*"],  # allow all for now
+allow_credentials=True,
+allow_methods=["*"],
+allow_headers=["*"],
+)
 
 model = joblib.load("model/arogya_rf_model.pkl")
-
-# 🔹 Input schema
 
 class PatientVitals(BaseModel):
     Age: int
@@ -20,20 +26,17 @@ class PatientVitals(BaseModel):
     SpO2: float
     Household_ID: str
 
-# 🔹 Home route (for testing)
-
 @app.get("/")
 def home():
- return {"message": "Arogya ML backend running"}
-
-# 🔹 Preprocessing
+    return {"message": "Arogya ML backend running"}
 
 def preprocess(vitals: PatientVitals):
     gender = 1 if vitals.Gender.lower() == "female" else 0
     is_febrile = 1 if vitals.Temperature > 38 else 0
     is_hypoxic = 1 if vitals.SpO2 < 94 else 0
 
-    features = np.array([[
+
+    return np.array([[
         vitals.Age,
         gender,
         vitals.HeartRate,
@@ -43,10 +46,6 @@ def preprocess(vitals: PatientVitals):
         is_hypoxic
     ]])
 
-    return features
-
-
-# 🔹 Household risk (simple logic)
 
 def calculate_hcrs(confidence):
     infected = int(confidence // 25)
@@ -62,8 +61,6 @@ def calculate_hcrs(confidence):
 
     return round(hcrs, 2), status
 
-
-# 🔹 Prediction route
 
 @app.post("/predict")
 def predict(vitals: PatientVitals):
@@ -83,5 +80,4 @@ def predict(vitals: PatientVitals):
         "hcrs": hcrs,
         "cluster_status": cluster_status
     }
-
 
