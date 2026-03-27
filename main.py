@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import joblib
 import numpy as np
-import os
+
 
 app = FastAPI()
 
@@ -85,9 +85,3 @@ def predict(vitals: PatientVitals):
     }
 
 
-# 🔥 IMPORTANT FOR RENDER
-
-if name == "main":
-    import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
